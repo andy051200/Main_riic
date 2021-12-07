@@ -51,24 +51,57 @@ void setup()
   //-------CONFIGURACION DE ENTRADAS Y SALIDAS
   //entradas
   //si ninguno se activa, es porque esta vacio el contenedor
-  pinMode(0, INPUT_PULLUP);        //nivel leve
-  pinMode(4, INPUT_PULLUP);        //nivel medio
+  pinMode(19, INPUT_PULLUP);        //nivel leve
+  pinMode(18, INPUT_PULLUP);        //nivel medio
   pinMode(5, INPUT_PULLUP);        //nivel alto
+  pinMode(36, INPUT);
   /*
   digitalWrite(aire,LOW);
   digitalWrite(CO2,LOW);
   digitalWrite(gas,LOW);*/
   //-------CONFIGURACION DE INTERRUPCIONES
-  attachInterrupt(digitalPinToInterrupt(0), ISR_n1, FALLING);      //nivel leve
-  attachInterrupt(digitalPinToInterrupt(4), ISR_n2, FALLING);      //nivel medio
+  attachInterrupt(digitalPinToInterrupt(19), ISR_n1, FALLING);      //nivel leve
+  attachInterrupt(digitalPinToInterrupt(18), ISR_n2, FALLING);      //nivel medio
   attachInterrupt(digitalPinToInterrupt(5), ISR_n3, FALLING);      //nivel alto
-  Serial.begin(115200);
+  Serial.begin(9600);
 }
 /*-----------------------------------------------------------------------------
  -------------------------- M A I N   L O O P ---------------------------------
  -----------------------------------------------------------------------------*/
 void loop()
 {
+  antirrebotes_niveles();
+  temp = analogRead(36);
+  if(nivel1==1 && temp>80){
+    Serial.print("alto co2");
+    Serial.print(" | ");
+    Serial.println("bajo nivel de basura");
+  }
+  else if (nivel1==1 && temp<80){
+    Serial.print("bajo co2");
+    Serial.print(" | ");
+    Serial.println("bajo nivel de basura");
+  }
+  if(nivel2==1 && temp>80){
+    Serial.print("alto co2");
+    Serial.print(" | ");
+    Serial.println("nivel medio de basura");
+  }
+  else if(nivel2==1 && temp<80){
+    Serial.print("bajo co2");
+    Serial.print(" | ");
+    Serial.println("nivel medio de basura");
+  }
+  if(nivel3==1 && temp>80){
+    Serial.print("alto co2");
+    Serial.print(" | ");
+    Serial.println("nivel alto de basura");
+  }
+  else if(nivel3==1 && temp<80){
+    Serial.print("bajo co2");
+    Serial.print(" | ");
+    Serial.println("nivel alto de basura");
+  }
   /*
   s_analogica_mq135 = analogRead(36);       
   Serial.println(s_analogica_mq135, DEC);.
@@ -85,37 +118,32 @@ void loop()
  -----------------------------------------------------------------------------*/
  void antirrebotes_niveles(void){
   //-------antirrebote para nivel 1, leve
-  if (digitalRead(PD_0)==0 && antirrebote1==1){   //p1 libre
-    cuenta_p1=0;
-    digitalWrite(PB_0,HIGH);     //verde on
-    digitalWrite(PB_0,LOW);     //rojo off
+  if (digitalRead(19)==0 && antirrebote1==1){   
+    nivel1=1;       //nivel leve leve on
+    //Serial.println("nivel leve de basura");
+    
   }
-  else{                                           //p1 ocupado
-    cuenta_p1=1;
-    digitalWrite(PB_0,HIGH);     //verde off
-    digitalWrite(PB_0,LOW);     //rojo on
+  else{                                           
+    nivel1=0;       //nivel leve leve off
+  
   }
-  //-------antirrebote para nivel 2,
-  if (digitalRead(PD_1)==0 && antirrebote2==1){   //p2 libre
-    cuenta_p2=0;
-    digitalWrite(PE_4,HIGH);     //verde on
-    digitalWrite(PE_5,LOW);     //rojo off
+  //-------antirrebote para nivel 2, medio
+  if (digitalRead(18)==0 && antirrebote2==1){   
+    nivel2=1;       //nivel medio on
+    //Serial1.println("nivel medio de basura");
   }
-  else{                                           //p2 ocupado
-    cuenta_p2=1;
-    digitalWrite(PE_4,HIGH);     //verde off
-    digitalWrite(PE_5,LOW);     //rojo on
+  else{                                           
+    nivel2=0;       //nivel medio off
+  
   }
   //-------antirrebote para parqueo 3
-  if (digitalRead(PD_2)==0 && antirrebote3==1){   //p3 libre
-    cuenta_p3=0;
-    digitalWrite(PB_4,HIGH);     //verde on
-    digitalWrite(PA_5,LOW);     //rojo off
+  if (digitalRead(5)==0 && antirrebote3==1){  
+      nivel3=1;       //nivel alto on
+      //Serial1.println("nivel alto de basura");
   }
-  else{                                           //p3 ocupado
-    cuenta_p3=1;
-    digitalWrite(PB_4,HIGH);     //verde on
-    digitalWrite(PA_5,LOW);     //rojo off
+  else{                                           
+    nivel3=0;         //nivel alto off
+  
   }
   
  }
