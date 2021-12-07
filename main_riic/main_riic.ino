@@ -14,7 +14,12 @@ Descripcion: lectura del ADC para sensor de fuerza y se despliegara en un 7seg
  ----------------------------L I B R E R I A S---------------------------------
  -----------------------------------------------------------------------------*/
 #include <WiFi.h>
-#include <WebServer.h>
+#include <ESP8266WebServer.h>
+//#include <ESP8266mDNS.h>
+#include <Arduino.h>
+#include <Wire.h>
+#include <Adafruit_SHT31.h>
+
 /*-----------------------------------------------------------------------------
  ------------ P R O T O T I P O S   D E   F U N C I O N E S -------------------
  -----------------------------------------------------------------------------*/
@@ -23,13 +28,24 @@ void estado_sensores(void);
  /*-----------------------------------------------------------------------------
  -----------------V A R I A B L E S   A   I M P L E M T E N T A R--------------
  -----------------------------------------------------------------------------*/
-const char* ssid = "Casa Bonilla";          // Enter your SSID here
-const char* password = "losbonilla2021";    //Enter your Password here
-WebServer server(80);  // Object of WebServer(HTTP port, 80 is defult)
+#ifndef STASSID
+#define STASSID "Casa Bonilla"      //nombre de red a conectar
+#define STAPSK  "losbonilla2021"    //contraseña de red
+#endif
+
+char* ssid = STASSID;
+char* password = STAPSK;
+
+ESP8266WebServer server(80);
 
 unsigned char nivel1, nivel2, nivel3;   //variables para sensores de proximidad
 unsigned char antirrebote1, antirrebote2, antirrebote3; //antirrebotes
 unsigned char temp, aire;               //variables para temperatura y aire
+
+bool enableHeater = false;
+uint8_t loopCnt = 0;
+
+Adafruit_SHT31 sht31 = Adafruit_SHT31();
 /*-----------------------------------------------------------------------------
  --------------------- I N T E R R U P C I O N E S ----------------------------
  -----------------------------------------------------------------------------*/  
@@ -53,17 +69,18 @@ void setup()
   //-------CONFIGURACION DE ENTRADAS Y SALIDAS
   //entradas
   //si ninguno se activa, es porque esta vacio el contenedor
-  pinMode(19, INPUT_PULLUP);        //nivel leve
-  pinMode(18, INPUT_PULLUP);        //nivel medio
-  pinMode(5, INPUT_PULLUP);         //nivel alto
-  pinMode(36, INPUT);               //entrada para sensor de co2
+  pinMode(D5, INPUT_PULLUP);        //nivel leve
+  pinMode(D6, INPUT_PULLUP);        //nivel medio
+  pinMode(D7, INPUT_PULLUP);        //nivel alto
+  pinMode(A0, INPUT);               //entrada para sensor de co2
   
   //-------CONFIGURACION DE INTERRUPCIONES
-  attachInterrupt(digitalPinToInterrupt(19), ISR_n1, FALLING);      //nivel leve
-  attachInterrupt(digitalPinToInterrupt(18), ISR_n2, FALLING);      //nivel medio
-  attachInterrupt(digitalPinToInterrupt(5), ISR_n3, FALLING);      //nivel alto
+  attachInterrupt(digitalPinToInterrupt(D5), ISR_n1, FALLING);      //nivel leve
+  attachInterrupt(digitalPinToInterrupt(D6), ISR_n2, FALLING);      //nivel medio
+  attachInterrupt(digitalPinToInterrupt(D7), ISR_n3, FALLING);      //nivel alto
   Serial.begin(9600);
-   WiFi.begin(ssid, password);   //se inicia la conexion wifi
+  //-------INICIALIZACION DE SERVIDOR WIFI
+  WiFi.begin(ssid, password);   //se inicia la conexion wifi
   // Check wi-fi is connected to wi-fi network
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
@@ -74,20 +91,36 @@ void setup()
   Serial.print("Got IP: ");
   Serial.println(WiFi.localIP());  //Show ESP32 IP on serial
 
-  server.on("/", handle_OnConnect); // Directamente desde e.g. 192.168.0.8
+  server.on("/", handleRoot); // Directamente desde e.g. 192.168.0.8
   server.onNotFound(handle_NotFound);
 
   server.begin();
   Serial.println("HTTP server started");
   delay(100);
+  //-------INICIALIZACION DE SENSOR 12C
+  while (!Serial)
+    delay(10);     // will pause Zero, Leonardo, etc until serial console opens
+
+  Serial.println("SHT31 test");
+  if (! sht31.begin(0x44)) {   // Set to 0x45 for alternate i2c addr
+    Serial.println("Couldn't find SHT31");
+    while (1) delay(1);
+  }
+  Serial.print("Heater Enabled State: ");
+  if (sht31.isHeaterEnabled())
+    Serial.println("ENABLED");
+  else
+    Serial.println("DISABLED");
+    delay(100);
 }
 /*-----------------------------------------------------------------------------
  -------------------------- M A I N   L O O P ---------------------------------
  -----------------------------------------------------------------------------*/
 void loop()
 {
-  //-------inicializacion de lectura del adc
-  temp = analogRead(36);
+  //-------inicializacion de lecturas
+  aire = analogRead(A0);              //sensor de co2
+  float t = sht31.readTemperature();  //sensor de temperatura
   //-------se inicia el servidor web
   server.handleClient();
   //-------antirrebotes de cambios en niveles de basura
@@ -104,7 +137,7 @@ void loop()
  -----------------------------------------------------------------------------*/
  void antirrebotes_niveles(void){
   //-------antirrebote para nivel 1, leve
-  if (digitalRead(19)==0 && antirrebote1==1){   
+  if (digitalRead(D5)==0 && antirrebote1==1){   
     nivel1=1;       //nivel leve leve on
     //Serial.println("nivel leve de basura");
     
@@ -114,7 +147,7 @@ void loop()
   
   }
   //-------antirrebote para nivel 2, medio
-  if (digitalRead(18)==0 && antirrebote2==1){   
+  if (digitalRead(D6)==0 && antirrebote2==1){   
     nivel2=1;       //nivel medio on
     //Serial1.println("nivel medio de basura");
   }
@@ -123,7 +156,7 @@ void loop()
   
   }
   //-------antirrebote para parqueo 3
-  if (digitalRead(5)==0 && antirrebote3==1){  
+  if (digitalRead(D7)==0 && antirrebote3==1){  
       nivel3=1;       //nivel alto on
       //Serial1.println("nivel alto de basura");
   }
@@ -134,32 +167,32 @@ void loop()
  }
 //-------funcion de actualizacion de sensores
 void estado_sensores(void){
-  if(nivel1==1 && temp>80){
+  if(nivel1==1 && aire>80){
     Serial.print("alto co2");
     Serial.print(" | ");
     Serial.println("bajo nivel de basura");
   }
-  else if (nivel1==1 && temp<80){
+  else if (nivel1==1 && aire<80){
     Serial.print("bajo co2");
     Serial.print(" | ");
     Serial.println("bajo nivel de basura");
   }
-  if(nivel2==1 && temp>80){
+  if(nivel2==1 && aire>80){
     Serial.print("alto co2");
     Serial.print(" | ");
     Serial.println("nivel medio de basura");
   }
-  else if(nivel2==1 && temp<80){
+  else if(nivel2==1 && aire<80){
     Serial.print("bajo co2");
     Serial.print(" | ");
     Serial.println("nivel medio de basura");
   }
-  if(nivel3==1 && temp>80){
+  if(nivel3==1 && aire>80){
     Serial.print("alto co2");
     Serial.print(" | ");
     Serial.println("nivel alto de basura");
   }
-  else if(nivel3==1 && temp<80){
+  else if(nivel3==1 && aire<80){
     Serial.print("bajo co2");
     Serial.print(" | ");
     Serial.println("nivel alto de basura");
@@ -168,7 +201,7 @@ void estado_sensores(void){
  }
 
 //-------Handler de Inicio página
-void handle_OnConnect() {
+void handleRoot() {
   server.send(200, "text/html", SendHTML());
 }
 
