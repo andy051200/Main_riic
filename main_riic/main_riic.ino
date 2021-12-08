@@ -187,7 +187,7 @@ void estado_sensores(void){
   }
   
   //-------actualizacion nivel 2
-  if(nivel1==1 && nivel2==1 && nivel3==0){
+  else if(nivel1==1 && nivel2==1 && nivel3==0){
     Serial.print(aire);
     Serial.print(" | ");
     Serial.print("nivel medio de basura");
@@ -197,7 +197,7 @@ void estado_sensores(void){
     pixels.show();
   }
   //-------actualizacion nivel 3
-  if(nivel1==1 && nivel2==1 && nivel3==1){
+  else if(nivel1==1 && nivel2==1 && nivel3==1){
     Serial.print(aire);
     Serial.print(" | ");
     Serial.print("nivel alto de basura");
@@ -206,6 +206,10 @@ void estado_sensores(void){
     pixels.setPixelColor(wenas,pixels.Color(255, 0, 0)); //rojo
     pixels.show();
     //digitalWrite(12,HIGH);
+  }
+  else{
+    pixels.setPixelColor(wenas,pixels.Color(255, 255, 255)); //rojo
+    pixels.show();
   }
  }
 
