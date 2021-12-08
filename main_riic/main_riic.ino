@@ -176,7 +176,7 @@ void antirrebotes_niveles(void){
 //-------FUNCION DE ACTUALIZACION DE SENSORES
 void estado_sensores(void){
   //-------actualizacion nivel 1
-  if(nivel1==1){
+  if(nivel1==1 && nivel2==0 && nivel3==0){
     Serial.print(aire);
     Serial.print(" | ");
     Serial.print("bajo nivel de basura");
@@ -187,7 +187,7 @@ void estado_sensores(void){
   }
   
   //-------actualizacion nivel 2
-  if(nivel2==1){
+  if(nivel1==1 && nivel2==1 && nivel3==0){
     Serial.print(aire);
     Serial.print(" | ");
     Serial.print("nivel medio de basura");
@@ -197,7 +197,7 @@ void estado_sensores(void){
     pixels.show();
   }
   //-------actualizacion nivel 3
-  if(nivel3==1){
+  if(nivel1==1 && nivel2==1 && nivel3==1){
     Serial.print(aire);
     Serial.print(" | ");
     Serial.print("nivel alto de basura");
@@ -207,8 +207,6 @@ void estado_sensores(void){
     pixels.show();
     //digitalWrite(12,HIGH);
   }
-  
-  
  }
 
 //-------HANDLER DE INICIO DE PAGINA
@@ -286,7 +284,7 @@ String SendHTML(unsigned char air, float tempt, unsigned char level) {
       ptr += "<h2 align='center'>Cantidad de Parqueos disponibles: 8</h2>";
       break;
   }*/
-  ptr += "<img src='https://www.prensalibre.com/wp-content/uploads/2018/12/2b415b67-d65a-45ad-9224-7e53feebd4e9.jpeg?quality=52&w=760&h=430&crop=1'>";
+  ptr += "<img src='https://cdn.pixabay.com/photo/2016/12/31/01/43/auto-1941988_960_720.png'>";
   ptr += "  </table>\n";
   ptr += "  </html>\n";
   ptr += "";
