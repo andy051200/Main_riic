@@ -73,7 +73,6 @@ void setup()
   clock_prescale_set(clock_div_1);
   #endif
   //-------CONFIGURACION DE ENTRADAS Y SALIDAS
-  //entradas
   //si ninguno se activa, es porque esta vacio el contenedor
   pinMode(19, INPUT_PULLUP);        //nivel leve
   pinMode(18, INPUT_PULLUP);        //nivel medio
@@ -143,7 +142,8 @@ void loop()
   wenas++;
   if (wenas>15){
     wenas=0;
-    }
+  }
+  
   
 }
 /*-----------------------------------------------------------------------------
@@ -176,8 +176,8 @@ void antirrebotes_niveles(void){
 //-------FUNCION DE ACTUALIZACION DE SENSORES
 void estado_sensores(void){
   //-------actualizacion nivel 1
-  if(nivel1==1 && aire>100){
-    Serial.print("alto co2");
+  if(nivel1==1){
+    Serial.print(aire);
     Serial.print(" | ");
     Serial.print("bajo nivel de basura");
     Serial.print(" | ");
@@ -185,18 +185,10 @@ void estado_sensores(void){
     pixels.setPixelColor(wenas,pixels.Color(0, 150, 0));  //verde
     pixels.show();
   }
-  else if (nivel1==1 && aire<100){
-    Serial.print("bajo co2");
-    Serial.print(" | ");
-    Serial.print("bajo nivel de basura");
-    Serial.print(" | ");
-    Serial.println(temp);
-    pixels.setPixelColor(wenas,pixels.Color(0, 150, 0)); //verde
-    pixels.show();
-  }
+  
   //-------actualizacion nivel 2
-  if(nivel2==1 && aire>100){
-    Serial.print("alto co2");
+  if(nivel2==1){
+    Serial.print(aire);
     Serial.print(" | ");
     Serial.print("nivel medio de basura");
     Serial.print(" | ");
@@ -204,36 +196,18 @@ void estado_sensores(void){
     pixels.setPixelColor(wenas,pixels.Color(255, 233, 0)); //amarillo
     pixels.show();
   }
-  else if(nivel2==1 && aire<100){
-    Serial.print("bajo co2");
-    Serial.print(" | ");
-    Serial.print("nivel medio de basura");
-    Serial.print(" | ");
-    Serial.println(temp);
-    pixels.setPixelColor(wenas,pixels.Color(255, 233, 0));  //amarillo
-    pixels.show();
-  }
   //-------actualizacion nivel 3
-  if(nivel3==1 && aire>80){
-    Serial.print("alto co2");
+  if(nivel3==1){
+    Serial.print(aire);
     Serial.print(" | ");
     Serial.print("nivel alto de basura");
     Serial.print(" | ");
     Serial.println(temp);
     pixels.setPixelColor(wenas,pixels.Color(255, 0, 0)); //rojo
     pixels.show();
-    digitalWrite(12,HIGH);
+    //digitalWrite(12,HIGH);
   }
-  else if(nivel3==1 && aire<100){
-    Serial.print("bajo co2");
-    Serial.print(" | ");
-    Serial.print("nivel alto de basura");
-    Serial.print(" | ");
-    Serial.println(temp);
-    pixels.setPixelColor(wenas,pixels.Color(255, 0, 0)); //rojo
-    pixels.show();
-    digitalWrite(12,HIGH);
-  }
+  
   
  }
 
