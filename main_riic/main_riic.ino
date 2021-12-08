@@ -222,7 +222,7 @@ String SendHTML(unsigned char air, float tempt, unsigned char level) {
 
   ptr += "  <head>\n";
   ptr += "    <meta chatset=\"utf_8\">\n";
-  ptr += "    <title>PROYECTO 3</title>\n";
+  ptr += "    <title> YAIMA, RIIC 4.0 </title>\n";
   ptr += "    <script>\n";
   ptr += "  <!--\n";
   ptr += "  function timedRefresh(timeoutPeriod) {\n";
@@ -233,9 +233,9 @@ String SendHTML(unsigned char air, float tempt, unsigned char level) {
   ptr += "\n";
   ptr += "  //   -->\n";
   ptr += "  </script>\n";
-  ptr += "      <h1 align='center'>PARQUEO CIT</h1>\n";
-  ptr += "      <h2 align='center'>Proyecto 3, Electronica Digital 2 </h2></th>\n";
-  ptr += "      <h2 align='center'>Julio Avila, Andy Bonilla, Pablo Herrarte </h2></th>\n";
+  ptr += "      <h1 align='center'>Proyecto Yaima</h1>\n";
+  ptr += "      <h2 align='center'> C2A2E </h2></th>\n";
+  ptr += "      <h2 align='center'> Cyntia Matus, Crithofer Patzán, Alvaro Sosa, Andy Bonilla, Emmanuel Sandoval</h2></th>\n";
   //-------prueba de aire
   if (aire>0){
     ptr += "<h2 align='center'>hay aire xd</h2>";
@@ -286,7 +286,7 @@ String SendHTML(unsigned char air, float tempt, unsigned char level) {
       ptr += "<h2 align='center'>Cantidad de Parqueos disponibles: 8</h2>";
       break;
   }*/
-  ptr += "<img src='https://cdn.pixabay.com/photo/2016/12/31/01/43/auto-1941988_960_720.png'>";
+  ptr += "<img src='https://www.prensalibre.com/wp-content/uploads/2018/12/2b415b67-d65a-45ad-9224-7e53feebd4e9.jpeg?quality=52&w=760&h=430&crop=1'>";
   ptr += "  </table>\n";
   ptr += "  </html>\n";
   ptr += "";
