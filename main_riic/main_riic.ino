@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------  
 Archivo: prototipo_RIIC
 Microcontrolador: ATmega328P
-Autor: Cyntia Matus y Andy Bonilla
+Autor: C2A2E
 Compilador: Arduino IDE
 Programa: prototipo_RIIC
 Hardware: ESP32 8266
@@ -13,13 +13,12 @@ Descripcion: lectura del ADC para sensor de fuerza y se despliegara en un 7seg
 /*-----------------------------------------------------------------------------
  ----------------------------L I B R E R I A S---------------------------------
  -----------------------------------------------------------------------------*/
-#include <WiFi.h>
-#include <ESP8266WebServer.h>
-//#include <ESP8266mDNS.h>
-#include <Arduino.h>
-#include <Wire.h>
-#include <Adafruit_SHT31.h>
-
+#include <WiFi.h>                 //libreria para conexion a wifi
+#include <WebServer.h>            //libreria para peuqeño servidor web
+#include <Arduino.h>              //libreria de arduino
+#include <Wire.h>                 //libreria de comunicacion i2c
+#include <Adafruit_SHT31.h>       //libreria de sensor de temperatura
+#include <Adafruit_NeoPixel.h>    //libreria de rueda rgb
 /*-----------------------------------------------------------------------------
  ------------ P R O T O T I P O S   D E   F U N C I O N E S -------------------
  -----------------------------------------------------------------------------*/
@@ -28,24 +27,28 @@ void estado_sensores(void);
  /*-----------------------------------------------------------------------------
  -----------------V A R I A B L E S   A   I M P L E M T E N T A R--------------
  -----------------------------------------------------------------------------*/
-#ifndef STASSID
-#define STASSID "Casa Bonilla"      //nombre de red a conectar
-#define STAPSK  "losbonilla2021"    //contraseña de red
+//-------DIRECTIVAS DE COMPILADOR
+#ifdef __AVR__
+#include <avr/power.h> // Required for 16 MHz Adafruit Trinket
 #endif
+#define PIN        13                           //pin que se hara toggle de color 
+#define NUMPIXELS 16                            //numero de leds en aro de luz
+#define DELAYVAL 500 //
+//-------VARIABLES GLOBALES DEL PROGRAMA
+const char* ssid = "Casa Bonilla";              //Enter your SSID here
+const char* password = "losbonilla2021";        //Enter your Password here
+WebServer server(80);                           //HTTP port, 80 is defult)
 
-char* ssid = STASSID;
-char* password = STAPSK;
-
-ESP8266WebServer server(80);
-
-unsigned char nivel1, nivel2, nivel3;   //variables para sensores de proximidad
+unsigned char nivel1, nivel2, nivel3, niveles;   //variables para sensor Prox
 unsigned char antirrebote1, antirrebote2, antirrebote3; //antirrebotes
-unsigned char temp, aire;               //variables para temperatura y aire
-
-bool enableHeater = false;
+unsigned char aire;                              //variables para aire
+int wenas;
+float temp;                                      //variable de temperatura
+bool enableHeater = false;                       //inicializador de temp
 uint8_t loopCnt = 0;
 
-Adafruit_SHT31 sht31 = Adafruit_SHT31();
+Adafruit_SHT31 sht31 = Adafruit_SHT31();  
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);  
 /*-----------------------------------------------------------------------------
  --------------------- I N T E R R U P C I O N E S ----------------------------
  -----------------------------------------------------------------------------*/  
@@ -66,18 +69,22 @@ void ISR_n3(){
  -----------------------------------------------------------------------------*/
 void setup()
 {
+  #if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
+  clock_prescale_set(clock_div_1);
+  #endif
   //-------CONFIGURACION DE ENTRADAS Y SALIDAS
   //entradas
   //si ninguno se activa, es porque esta vacio el contenedor
-  pinMode(D5, INPUT_PULLUP);        //nivel leve
-  pinMode(D6, INPUT_PULLUP);        //nivel medio
-  pinMode(D7, INPUT_PULLUP);        //nivel alto
-  pinMode(A0, INPUT);               //entrada para sensor de co2
+  pinMode(19, INPUT_PULLUP);        //nivel leve
+  pinMode(18, INPUT_PULLUP);        //nivel medio
+  pinMode(5, INPUT_PULLUP);         //nivel alto
+  pinMode(36, INPUT);               //entrada para sensor de co2
+  pinMode(12, OUTPUT);              //salida del buzzer
   
   //-------CONFIGURACION DE INTERRUPCIONES
-  attachInterrupt(digitalPinToInterrupt(D5), ISR_n1, FALLING);      //nivel leve
-  attachInterrupt(digitalPinToInterrupt(D6), ISR_n2, FALLING);      //nivel medio
-  attachInterrupt(digitalPinToInterrupt(D7), ISR_n3, FALLING);      //nivel alto
+  attachInterrupt(digitalPinToInterrupt(19), ISR_n1, FALLING);      //nivel leve
+  attachInterrupt(digitalPinToInterrupt(18), ISR_n2, FALLING);      //nivel medio
+  attachInterrupt(digitalPinToInterrupt(5), ISR_n3, FALLING);      //nivel alto
   Serial.begin(9600);
   //-------INICIALIZACION DE SERVIDOR WIFI
   WiFi.begin(ssid, password);   //se inicia la conexion wifi
@@ -91,7 +98,7 @@ void setup()
   Serial.print("Got IP: ");
   Serial.println(WiFi.localIP());  //Show ESP32 IP on serial
 
-  server.on("/", handleRoot); // Directamente desde e.g. 192.168.0.8
+  server.on("/", handle_OnConnect); // Directamente desde e.g. 192.168.0.8
   server.onNotFound(handle_NotFound);
 
   server.begin();
@@ -112,6 +119,9 @@ void setup()
   else
     Serial.println("DISABLED");
     delay(100);
+  //-------INCIALIZACION DE ARO DE LUZ
+  pixels.begin();  
+  pixels.clear();
 }
 /*-----------------------------------------------------------------------------
  -------------------------- M A I N   L O O P ---------------------------------
@@ -119,8 +129,9 @@ void setup()
 void loop()
 {
   //-------inicializacion de lecturas
-  aire = analogRead(A0);              //sensor de co2
-  float t = sht31.readTemperature();  //sensor de temperatura
+  aire = analogRead(36);              //sensor de co2
+  temp = sht31.readTemperature();     //sensor de temperatura
+  niveles=nivel1+nivel2+nivel3;       
   //-------se inicia el servidor web
   server.handleClient();
   //-------antirrebotes de cambios en niveles de basura
@@ -128,85 +139,111 @@ void loop()
   //-------actualizacion de sensores
   estado_sensores();
   //-------ejecucion de pequeño servidor
-  server.send(200, "text/html", SendHTML());
-  
+  server.send(200, "text/html", SendHTML(aire,temp,niveles));
+  wenas++;
+  if (wenas>15){
+    wenas=0;
+    }
   
 }
 /*-----------------------------------------------------------------------------
  ------------------------- F U N C I O N E S ----------------------------------
  -----------------------------------------------------------------------------*/
- void antirrebotes_niveles(void){
+//-------FUNCION PARA ANTIRREBOTES DE SENSORES DE PROXIMIDAD
+void antirrebotes_niveles(void){
   //-------antirrebote para nivel 1, leve
-  if (digitalRead(D5)==0 && antirrebote1==1){   
+  if (digitalRead(19)==0 && antirrebote1==1){   
     nivel1=1;       //nivel leve leve on
-    //Serial.println("nivel leve de basura");
-    
   }
   else{                                           
     nivel1=0;       //nivel leve leve off
-  
   }
   //-------antirrebote para nivel 2, medio
-  if (digitalRead(D6)==0 && antirrebote2==1){   
+  if (digitalRead(18)==0 && antirrebote2==1){   
     nivel2=1;       //nivel medio on
-    //Serial1.println("nivel medio de basura");
   }
   else{                                           
     nivel2=0;       //nivel medio off
-  
   }
   //-------antirrebote para parqueo 3
-  if (digitalRead(D7)==0 && antirrebote3==1){  
-      nivel3=1;       //nivel alto on
-      //Serial1.println("nivel alto de basura");
+  if (digitalRead(5)==0 && antirrebote3==1){  
+    nivel3=1;       //nivel alto on
   }
   else{                                           
     nivel3=0;         //nivel alto off
-  
   }
- }
-//-------funcion de actualizacion de sensores
+}
+//-------FUNCION DE ACTUALIZACION DE SENSORES
 void estado_sensores(void){
-  if(nivel1==1 && aire>80){
+  //-------actualizacion nivel 1
+  if(nivel1==1 && aire>100){
     Serial.print("alto co2");
     Serial.print(" | ");
-    Serial.println("bajo nivel de basura");
+    Serial.print("bajo nivel de basura");
+    Serial.print(" | ");
+    Serial.println(temp);
+    pixels.setPixelColor(wenas,pixels.Color(0, 150, 0));  //verde
+    pixels.show();
   }
-  else if (nivel1==1 && aire<80){
+  else if (nivel1==1 && aire<100){
     Serial.print("bajo co2");
     Serial.print(" | ");
-    Serial.println("bajo nivel de basura");
+    Serial.print("bajo nivel de basura");
+    Serial.print(" | ");
+    Serial.println(temp);
+    pixels.setPixelColor(wenas,pixels.Color(0, 150, 0)); //verde
+    pixels.show();
   }
-  if(nivel2==1 && aire>80){
+  //-------actualizacion nivel 2
+  if(nivel2==1 && aire>100){
     Serial.print("alto co2");
     Serial.print(" | ");
-    Serial.println("nivel medio de basura");
+    Serial.print("nivel medio de basura");
+    Serial.print(" | ");
+    Serial.println(temp);
+    pixels.setPixelColor(wenas,pixels.Color(255, 233, 0)); //amarillo
+    pixels.show();
   }
-  else if(nivel2==1 && aire<80){
+  else if(nivel2==1 && aire<100){
     Serial.print("bajo co2");
     Serial.print(" | ");
-    Serial.println("nivel medio de basura");
+    Serial.print("nivel medio de basura");
+    Serial.print(" | ");
+    Serial.println(temp);
+    pixels.setPixelColor(wenas,pixels.Color(255, 233, 0));  //amarillo
+    pixels.show();
   }
+  //-------actualizacion nivel 3
   if(nivel3==1 && aire>80){
     Serial.print("alto co2");
     Serial.print(" | ");
-    Serial.println("nivel alto de basura");
+    Serial.print("nivel alto de basura");
+    Serial.print(" | ");
+    Serial.println(temp);
+    pixels.setPixelColor(wenas,pixels.Color(255, 0, 0)); //rojo
+    pixels.show();
+    digitalWrite(12,HIGH);
   }
-  else if(nivel3==1 && aire<80){
+  else if(nivel3==1 && aire<100){
     Serial.print("bajo co2");
     Serial.print(" | ");
-    Serial.println("nivel alto de basura");
+    Serial.print("nivel alto de basura");
+    Serial.print(" | ");
+    Serial.println(temp);
+    pixels.setPixelColor(wenas,pixels.Color(255, 0, 0)); //rojo
+    pixels.show();
+    digitalWrite(12,HIGH);
   }
   
  }
 
-//-------Handler de Inicio página
-void handleRoot() {
-  server.send(200, "text/html", SendHTML());
+//-------HANDLER DE INICIO DE PAGINA
+void handle_OnConnect() {
+  server.send(200, "text/html", SendHTML(aire,temp, niveles));
 }
 
 //-------funcion para ejecucion de pequeño servidor web
-String SendHTML() {
+String SendHTML(unsigned char air, float tempt, unsigned char level) {
   String ptr = "<!DOCTYPE html> <html>\n";
 
   ptr += "  <head>\n";
@@ -218,14 +255,34 @@ String SendHTML() {
   ptr += "  \tsetTimeout(\"location.reload(true);\",timeoutPeriod);\n";
   ptr += "  }\n";
   ptr += "\n";
-  ptr += "  window.onload = timedRefresh(5000);\n";
+  ptr += "  window.onload = timedRefresh(15000);\n";
   ptr += "\n";
   ptr += "  //   -->\n";
   ptr += "  </script>\n";
- 
   ptr += "      <h1 align='center'>PARQUEO CIT</h1>\n";
   ptr += "      <h2 align='center'>Proyecto 3, Electronica Digital 2 </h2></th>\n";
   ptr += "      <h2 align='center'>Julio Avila, Andy Bonilla, Pablo Herrarte </h2></th>\n";
+  //-------prueba de aire
+  if (aire>0){
+    ptr += "<h2 align='center'>hay aire xd</h2>";
+  }
+  else{
+    ptr += "<h2 align='center'>no hay aire xd</h2>";
+  }
+  //-------prueba de temperatura
+  if (temp>0){
+    ptr += "<h2 align='center'>hay temperatura :o </h2>";
+  }
+  else {
+    ptr += "<h2 align='center'>no hay temperatura :o </h2>";
+  }
+  //-------prueba de niveles
+  switch(niveles){
+    case 1: ptr += "<h2 align='center'> nivel 1 </h2>"; break;
+    case 2: ptr += "<h2 align='center'> nivel 2 </h2>"; break;
+    case 3: ptr += "<h2 align='center'> nivel 3 </h2>"; break;
+    default: ptr += "<h2 align='center'> no ta conectado :( </h2>"; break;
+  }
   /*switch(wenas){
     case 0:
       ptr += "<h2 align='center'>Cantidad de Parqueos disponibles: 0</h2>";
@@ -261,7 +318,7 @@ String SendHTML() {
   ptr += "";
   return ptr;
 }
-//-------Handler de not found
+//-------HANDLER DE NOT FOUND
 void handle_NotFound() {
   server.send(404, "text/plain", "Not found");
 }
