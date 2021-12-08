@@ -208,7 +208,7 @@ void estado_sensores(void){
     //digitalWrite(12,HIGH);
   }
   else{
-    pixels.setPixelColor(wenas,pixels.Color(255, 255, 255)); //rojo
+    pixels.clear();
     pixels.show();
   }
  }
