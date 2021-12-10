@@ -221,7 +221,7 @@ void estado_sensores(void){
     pixels.show();
     //digitalWrite(12,HIGH);
   }
-  /*else{
+  else{
     Serial.print(aire);
     Serial.print(" | ");
     Serial.print("no hay basura");
@@ -229,7 +229,7 @@ void estado_sensores(void){
     Serial.println(temp);
     pixels.setPixelColor(wenas,pixels.Color(0 , 0, 0));
     pixels.show();
-  }*/
+  }
  }
 
 //-------HANDLER DE INICIO DE PAGINA
@@ -244,9 +244,9 @@ String SendHTML(byte aire, float tempt, byte level, float humedad) {
   ptr += " <head>\n";
   ptr += " <meta charset=\"utf-8\">\n";
   ptr += " <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n";
-  ptr += "<meta http-equiv=\"refresh\" content=\"3\" />";
-  ptr += "<title> YAIMA, RIIC 4.0 val </title>\n";
-  ptr += "<link rel=\"stylesheet\" href=\"index.css\">\n";
+  ptr += " <meta http-equiv=\"refresh\" content=\"20\" />";
+  ptr += " <title> YAIMA, RIIC 4.0 val </title>\n";
+  ptr += " <link rel=\"stylesheet\" href=\"index.css\">\n";
   ptr += " </head>\n";
 
   ptr += " <body onload=\"gettime()\"><center>";
