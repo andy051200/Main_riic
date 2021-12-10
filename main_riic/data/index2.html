@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>RIIC 4.0</title>
+	<link rel="stylesheet" href="index.css">
+</head>
+<body onload="gettime()"><center>
+    <h1>YAIMA PROJECT</h1>
+<table style="margin-top: 5%;"><tr>
+    <td>
+        <div class="content-all">
+<div class="content-img">
+
+            <div class="content-txt">
+                <h2> Humedad <br></h2>
+           </div>
+            <div class="content-1"></div>
+            <div class="content-2"></div>
+            <div class="content-3"></div>
+            <div class="content-4"></div>
+            <img src="humedad.jpg ">
+        </div>      
+</div>       
+    </td>
+<td> <div class="content-all">
+<div class="content-img">
+
+            <div class="content-txt"> 
+                <h2> Temp </h2>
+            </div>
+            <div class="content-1"></div>
+            <div class="content-2"></div>
+            <div class="content-3"></div>
+            <div class="content-4"></div>
+            <img src="temperatura.jpg ">
+        </div> 
+       </td>
+       <td> <div class="content-all">
+<div class="content-img">
+
+            <div class="content-txt">
+                <h2> Nivel de CO<sub>2</sub> </h2>
+
+            </div>
+
+            <div class="content-1"></div>
+            <div class="content-2"></div>
+            <div class="content-3"></div>
+            <div class="content-4"></div>
+            <img src="co4.jpg ">
+
+        </div> </td> 
+</tr></table>
+<table>
+<tr>
+<td>
+<div class="content-all">
+<div class="content-img">
+            <div class="content-txt">
+                <h2> Mantenimiento<br> </h2>
+            </div>
+            <div class="content-1"></div>
+            <div class="content-2"></div>
+            <div class="content-3"></div>
+            <div class="content-4"></div>
+            <img src="settings.png ">
+        </div></td>
+        <td><div class="content-all">
+<div class="content-img">
+            <div class="content-txt">
+                <h2> Capacidad<br></h2>
+            </div>
+            <div class="content-1"></div>
+            <div class="content-2"></div>
+            <div class="content-3"></div>
+            <div class="content-4"></div>
+            <img src="bat.jpg ">
+</div></td>
+</table>
+</center>
+<script language="JavaScript">
+function gettime() {
+    var date= new Date();
+     var s = date.getSeconds();
+        if(s < 10){
+        s = "0" + s}
+    document.clockform.clock.value =  s;
+    setTimeout("gettime()",100)}
+</script>
+<form name="clockform">
+<input type="text" name="clock">
+</form>
+</body>
+</html>
